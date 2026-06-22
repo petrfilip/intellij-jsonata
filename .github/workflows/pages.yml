@@ -1,0 +1,50 @@
+name: Deploy site
+
+# Publishes the static presentation site in web/ to GitHub Pages. Runs on pushes to main
+# that touch web/ (so plugin-only changes don't trigger a redeploy), and on demand.
+#
+# One-time setup: Settings ▸ Pages ▸ Build and deployment ▸ Source = "GitHub Actions".
+# No secrets needed — the GITHUB_TOKEN that Actions injects is enough.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+# Permissions the deploy-pages action requires.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one Pages deployment at a time; don't cancel an in-flight one (let it finish).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy web/ to Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      # The site is plain static files — upload web/ as-is. deploy-pages serves the
+      # artifact directly (no Jekyll), so fonts/ and vendor/ are published untouched.
+      - name: Upload web/ as the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

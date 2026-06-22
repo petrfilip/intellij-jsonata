@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>document.documentElement.classList.add("js");</script>
+  <title>JSONata for IntelliJ — a live JSON playground inside your IDE</title>
+  <meta name="description" content="An IntelliJ Platform plugin that opens a live JSONata playground beside your JSON file. Write an expression, see the result update as you type, with data-aware autocomplete. Works in every JetBrains IDE." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 39 39'%3E%3Crect width='39' height='39' rx='9' fill='%230C1A1E'/%3E%3Cg fill='none' stroke='%23F2B05E' stroke-width='3.3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6.9C10.8 6.9 11.1 11.7 11.1 15C11.1 17.7 9.3 19.5 6.9 19.5C9.3 19.5 11.1 21.3 11.1 24C11.1 27.3 10.8 32.1 15 32.1'/%3E%3Cpath d='M24 6.9C28.2 6.9 27.9 11.7 27.9 15C27.9 17.7 29.7 19.5 32.1 19.5C29.7 19.5 27.9 21.3 27.9 24C27.9 27.3 28.2 32.1 24 32.1'/%3E%3C/g%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ================= NAV ================= -->
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="brand" href="#top" aria-label="JSONata for IntelliJ — home">
+        <svg class="mark" width="22" height="22" viewBox="0 0 39 39" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 6.9C10.8 6.9 11.1 11.7 11.1 15C11.1 17.7 9.3 19.5 6.9 19.5C9.3 19.5 11.1 21.3 11.1 24C11.1 27.3 10.8 32.1 15 32.1" />
+            <path d="M24 6.9C28.2 6.9 27.9 11.7 27.9 15C27.9 17.7 29.7 19.5 32.1 19.5C29.7 19.5 27.9 21.3 27.9 24C27.9 27.3 28.2 32.1 24 32.1" />
+          </g>
+        </svg>
+        <span>JSONata<small>FOR INTELLIJ</small></span>
+      </a>
+      <div class="nav__spacer"></div>
+      <nav class="nav__links">
+        <a href="#features" class="nav-hide">Features</a>
+        <a href="#editor" class="nav-hide">In the editor</a>
+        <a href="#install">Install</a>
+        <a href="https://github.com/petrfilip/intellij-jsonata">GitHub&nbsp;↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ================= HERO + PLAYGROUND ================= -->
+    <section class="hero">
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="shell">
+        <div class="hero__inner">
+          <p class="eyebrow">IntelliJ Platform plugin · runs on 2024.3+</p>
+          <h1>A JSONata playground,<br /><span class="acc">bolted to your JSON file.</span></h1>
+          <p class="lead">
+            Open any JSON in your JetBrains IDE and a live playground splits off beside it.
+            Write a JSONata expression, watch the result update as you type — with autocomplete
+            that knows the shape of your data. No browser tab, no copy-paste.
+          </p>
+          <div class="hero__cta">
+            <a class="btn btn--primary" href="#install">Get it on JetBrains Marketplace</a>
+            <a class="btn btn--ghost" href="https://github.com/petrfilip/intellij-jsonata">View on GitHub</a>
+          </div>
+          <p class="hero__note">Below is the plugin's playground panel, <b>previewed right here in your browser.</b></p>
+        </div>
+
+        <!-- live playground: the thesis of the page -->
+        <div class="play-wrap" id="playground">
+          <div class="window">
+            <div class="window__bar">
+              <span class="tab">
+                <svg class="mark" width="13" height="13" viewBox="0 0 39 39" aria-hidden="true">
+                  <g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 6.9C10.8 6.9 11.1 11.7 11.1 15C11.1 17.7 9.3 19.5 6.9 19.5C9.3 19.5 11.1 21.3 11.1 24C11.1 27.3 10.8 32.1 15 32.1" />
+                    <path d="M24 6.9C28.2 6.9 27.9 11.7 27.9 15C27.9 17.7 29.7 19.5 32.1 19.5C29.7 19.5 27.9 21.3 27.9 24C27.9 27.3 28.2 32.1 24 32.1" />
+                  </g>
+                </svg>
+                orders.json
+              </span>
+              <span class="grow"></span>
+              <span class="window__label">JSONata&nbsp;Playground</span>
+            </div>
+
+            <div class="presets" id="presets">
+              <span class="label">Try</span>
+              <!-- chips injected by app.js -->
+            </div>
+
+            <div class="editor">
+              <div class="pane pane--json">
+                <div class="pane__head"><span class="tick"></span> orders.json — editable</div>
+                <textarea class="code" id="json-in" spellcheck="false" aria-label="JSON document"></textarea>
+              </div>
+              <div class="pane pane--right">
+                <div class="sub-pane">
+                  <div class="pane__head"><span class="tick"></span> JSONata expression</div>
+                  <textarea class="code expr-input" id="expr-in" spellcheck="false" aria-label="JSONata expression"></textarea>
+                </div>
+                <div class="sub-pane">
+                  <div class="pane__head"><span class="tick tick--cyan"></span> Result <span class="right">live · <b>recomputes</b> as you type</span></div>
+                  <pre class="code-out" id="result" aria-live="polite"></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="window__foot" id="foot-status"></div>
+          </div>
+          <p class="play-caption">This preview runs the engine on its own. <b>Inside your IDE</b> the same panel binds to the JSON file you have open, autocompletes your real field names, underlines errors in place, and shows function signatures — the parts a browser tab can't.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FEATURES ================= -->
+    <section class="band" id="features">
+      <div class="shell">
+        <div class="section-head rise">
+          <p class="eyebrow">What you get</p>
+          <h2>Editor smarts, not just a text box</h2>
+          <p>Every part of the playground is wired into the IDE — the real engine, the file you have open, and the structure of your own JSON.</p>
+        </div>
+
+        <div class="features rise">
+          <article class="feature">
+            <span class="feature__no">split editor</span>
+            <h3>Live preview, per file</h3>
+            <p>JSON opens in a split editor, like Markdown: source on the left, playground on the right. Switch files and you get that file's own playground. Recompute is debounced and bounded against runaway expressions.</p>
+            <div class="feature__code" data-expr>orders[status = "shipped"].id</div>
+          </article>
+
+          <article class="feature">
+            <span class="feature__no">lexer + language</span>
+            <h3>Syntax highlighting</h3>
+            <p>A dedicated JSONata language with its own lexer colors paths, string and number literals, operators, and the <span class="inline-code">$</span> functions as you type.</p>
+            <div class="feature__code" data-expr>payload.items[price > 10] ~> $sort()</div>
+          </article>
+
+          <article class="feature">
+            <span class="feature__no">annotator</span>
+            <h3>Errors, underlined in place</h3>
+            <p>Your expression is compiled by the real engine. A syntax error is underlined exactly where it happens — not buried in a console somewhere below.</p>
+            <div class="feature__code" data-expr>$sum(items.price</div>
+          </article>
+
+          <article class="feature">
+            <span class="feature__no">completion</span>
+            <h3>Field names that know your data</h3>
+            <p>After a <span class="inline-code">.</span> the plugin evaluates the path under your cursor against the bound JSON and suggests the real field names — so completion works even through predicates and function calls.</p>
+            <div class="feature__code" data-expr>orders.items.</div>
+          </article>
+
+          <article class="feature">
+            <span class="feature__no">completion</span>
+            <h3>Built-ins with signatures</h3>
+            <p>Type <span class="inline-code">$</span> and the catalog of JSONata functions appears — each with its signature, so you pick the right one without a trip to the docs.</p>
+            <div class="feature__code" data-expr>$map · $filter · $reduce · $sort · $distinct</div>
+          </article>
+
+          <article class="feature">
+            <span class="feature__no">parameter info</span>
+            <h3>Parameter hints</h3>
+            <p>Inside a function call, the signature pops up with the current argument highlighted — so you always know which parameter you're filling in.</p>
+            <div class="feature__code" data-expr>$substring(str, start, length)</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= IN THE EDITOR ================= -->
+    <section class="band" id="editor">
+      <div class="shell">
+        <div class="section-head rise">
+          <p class="eyebrow">How it feels</p>
+          <h2>It lives where your JSON does</h2>
+          <p>The same split view you'd reach for with Markdown — JSON on one side, a playground on the other, both pointed at one file.</p>
+        </div>
+
+        <div class="window rise">
+          <div class="window__bar">
+            <span class="tab">
+              <svg class="mark" width="13" height="13" viewBox="0 0 39 39" aria-hidden="true">
+                <g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 6.9C10.8 6.9 11.1 11.7 11.1 15C11.1 17.7 9.3 19.5 6.9 19.5C9.3 19.5 11.1 21.3 11.1 24C11.1 27.3 10.8 32.1 15 32.1" />
+                  <path d="M24 6.9C28.2 6.9 27.9 11.7 27.9 15C27.9 17.7 29.7 19.5 32.1 19.5C29.7 19.5 27.9 21.3 27.9 24C27.9 27.3 28.2 32.1 24 32.1" />
+                </g>
+              </svg>
+              catalog.json
+            </span>
+            <span class="grow"></span>
+            <span class="window__label">Editor · Split · Preview</span>
+          </div>
+          <div class="ide">
+            <div class="ide-col pane--json">
+              <div class="pane__head"><span class="tick"></span> catalog.json</div>
+              <pre class="code-out" data-json>{ "products": [ { "name": "Gel pen", "tags": ["office", "ink"], "price": 1.2 }, { "name": "Desk lamp", "tags": ["home"], "price": 29.9 } ] }</pre>
+            </div>
+            <div class="ide-col pane--right" style="display:grid; grid-template-rows:auto 1fr;">
+              <div class="sub-pane">
+                <div class="pane__head"><span class="tick"></span> expression</div>
+                <pre class="code-out" data-expr style="min-height:0">products[price &lt; 5].name</pre>
+              </div>
+              <div class="sub-pane" style="border-bottom:none">
+                <div class="pane__head"><span class="tick tick--cyan"></span> result</div>
+                <pre class="code-out" data-json>["Gel pen"]</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ide-callouts rise">
+          <div class="callout"><span class="n">1</span><p><b>Open a JSON file.</b> It opens in the split editor — preview hidden by default, nothing in your way.</p></div>
+          <div class="callout"><span class="n">2</span><p><b>Reveal the playground</b> with the Editor / Split / Preview toggle, or the floating <i>Open JSONata Playground</i> button.</p></div>
+          <div class="callout"><span class="n">3</span><p><b>Write an expression.</b> <span class="inline-code">Ctrl+Space</span> for fields and functions; <span class="inline-code">Ctrl+P</span> for a signature. The result tracks every keystroke.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= INSTALL ================= -->
+    <section class="band" id="install">
+      <div class="shell">
+        <div class="section-head rise">
+          <p class="eyebrow">Get started</p>
+          <h2>Install it</h2>
+          <p>It's on the JetBrains Marketplace — install it straight from your IDE, nothing to download or unzip.</p>
+        </div>
+
+        <div class="install-grid rise">
+          <ol class="steps">
+            <li><div><b>Open Plugins settings</b><br /><span>In your IDE: <code>Settings ▸ Plugins</code> (<code>⌘,</code> on macOS).</span></div></li>
+            <li><div><b>Search the Marketplace</b><br /><span>On the <b>Marketplace</b> tab, search for <code>JSONata</code>.</span></div></li>
+            <li><div><b>Install &amp; restart</b><br /><span>Hit <b>Install</b>, then restart the IDE if it asks.</span></div></li>
+            <li><div><b>Open a JSON file</b><br /><span>The playground is one <i>Editor / Split / Preview</i> toggle away.</span></div></li>
+          </ol>
+
+          <aside class="spec">
+            <h3>Requirements</h3>
+            <dl>
+              <dt>Platform</dt><dd>IntelliJ Platform build 243+ (2024.3 and newer)</dd>
+              <dt>IDEs</dt><dd>Every JetBrains IDE — <span class="ides">IDEA, WebStorm, PyCharm, GoLand, PhpStorm, RubyMine, CLion, Rider, RustRover, DataGrip…</span></dd>
+              <dt>Engine</dt><dd>dashjoin/jsonata-java, a faithful port of jsonata.js, bundled in the plugin</dd>
+              <dt>License</dt><dd>MIT</dd>
+            </dl>
+          </aside>
+        </div>
+        <p class="install-note">Open source, MIT licensed — prefer to build it yourself? Run <code>./gradlew buildPlugin</code> and grab the ZIP from <a href="https://github.com/petrfilip/intellij-jsonata">the repo</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="foot">
+    <div class="shell foot__inner">
+      <a class="brand" href="#top">
+        <svg class="mark" width="20" height="20" viewBox="0 0 39 39" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 6.9C10.8 6.9 11.1 11.7 11.1 15C11.1 17.7 9.3 19.5 6.9 19.5C9.3 19.5 11.1 21.3 11.1 24C11.1 27.3 10.8 32.1 15 32.1" />
+            <path d="M24 6.9C28.2 6.9 27.9 11.7 27.9 15C27.9 17.7 29.7 19.5 32.1 19.5C29.7 19.5 27.9 21.3 27.9 24C27.9 27.3 28.2 32.1 24 32.1" />
+          </g>
+        </svg>
+        <span>JSONata for IntelliJ</span>
+      </a>
+      <div class="foot__links">
+        <a href="#install">Install</a>
+        <a href="https://github.com/petrfilip/intellij-jsonata">GitHub</a>
+        <a href="https://github.com/petrfilip/intellij-jsonata/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://jsonata.org/">JSONata language ↗</a>
+      </div>
+      <p class="foot__meta">
+        Built by Petr Filip · MIT licensed · powered by
+        <a href="https://github.com/dashjoin/jsonata-java">dashjoin/jsonata-java</a>.
+        The in-page demo runs <a href="https://github.com/jsonata-js/jsonata">jsonata.js</a> in your browser.
+      </p>
+    </div>
+  </footer>
+
+  <script src="vendor/jsonata.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
