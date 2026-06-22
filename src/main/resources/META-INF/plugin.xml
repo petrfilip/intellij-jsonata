@@ -1,0 +1,74 @@
+<idea-plugin>
+    <id>cz.tix.jsonata</id>
+    <name>JSONata</name>
+    <vendor email="petr.filip@tix.cz" url="https://tix.cz">Petr Filip</vendor>
+
+    <description><![CDATA[
+        <p>Evaluate <b>JSONata</b> expressions against the JSON file you have open, with a live preview &mdash;
+        similar to <a href="https://try.jsonata.org/">try.jsonata.org</a>.</p>
+        <p>Open a JSON file, choose <i>Open JSONata Playground</i> from the editor or project-view context menu,
+        type an expression and watch the result update as you type. The playground stays bound to that JSON file.</p>
+        <p>Works in every JetBrains IDE built on the IntelliJ Platform (2024.3+) &mdash; IntelliJ IDEA,
+        PyCharm, WebStorm, GoLand, PhpStorm, RubyMine, CLion, Rider and more.</p>
+    ]]></description>
+
+    <!-- Base platform only; JSON syntax highlighting of the result is resolved at runtime
+         from the bundled JSON file type, so no hard dependency on the JSON plugin is needed. -->
+    <depends>com.intellij.modules.platform</depends>
+    <!-- Optional: the gutter icon on JsonataFunctionProvider classes needs Java/Kotlin PSI (UAST).
+         Loaded only when the Java module is present (e.g. IntelliJ IDEA); the rest works everywhere. -->
+    <depends optional="true" config-file="jsonata-uast.xml">com.intellij.modules.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- JSON files open in a split editor: JSON on the left, JSONata playground preview on the
+             right (like the Markdown editor). The preview is per-file and hidden by default. -->
+        <fileEditorProvider implementation="cz.tix.jsonata.editor.JsonataSplitEditorProvider"/>
+
+        <!-- JSONata language: file type, lexer/PSI, syntax highlighting -->
+        <fileType name="JSONata"
+                  implementationClass="cz.tix.jsonata.lang.JsonataFileType"
+                  fieldName="INSTANCE"
+                  language="JSONata"
+                  extensions="jsonata"/>
+        <lang.parserDefinition language="JSONata"
+                               implementationClass="cz.tix.jsonata.lang.JsonataParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="JSONata"
+                                       implementationClass="cz.tix.jsonata.lang.JsonataSyntaxHighlighterFactory"/>
+
+        <!-- Editor intelligence for the expression: errors, completion, parameter info -->
+        <annotator language="JSONata"
+                   implementationClass="cz.tix.jsonata.lang.JsonataAnnotator"/>
+        <completion.contributor language="JSONata"
+                                implementationClass="cz.tix.jsonata.completion.JsonataCompletionContributor"/>
+        <codeInsight.parameterInfo language="JSONata"
+                                   implementationClass="cz.tix.jsonata.lang.JsonataParameterInfoHandler"/>
+
+        <!-- Floating button over JSON editors to open the playground -->
+        <editorFloatingToolbarProvider
+            implementation="cz.tix.jsonata.actions.JsonataFloatingToolbarProvider"/>
+
+        <!-- Settings ▸ Tools ▸ JSONata Playground (custom functions config).
+             TEMPORARILY DISABLED: the custom-functions feature is hidden from the UI while it is
+             being tested and fine-tuned (see CUSTOM_FUNCTIONS_ENABLED). Uncomment to expose it again.
+        <projectConfigurable parentId="tools"
+                             id="cz.tix.jsonata.settings.JsonataConfigurable"
+                             displayName="JSONata Playground"
+                             instance="cz.tix.jsonata.settings.JsonataConfigurable"/>
+        -->
+    </extensions>
+
+    <actions>
+        <action id="cz.tix.jsonata.OpenPlayground"
+                class="cz.tix.jsonata.actions.OpenJsonataPlaygroundAction"
+                text="Open JSONata Playground"
+                description="Open the JSONata playground bound to this JSON file"
+                icon="/icons/jsonata.svg">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+
+        <!-- Action group hosted by the editor floating toolbar (see JsonataFloatingToolbarProvider) -->
+        <group id="Jsonata.FloatingToolbar">
+            <reference ref="cz.tix.jsonata.OpenPlayground"/>
+        </group>
+    </actions>
+</idea-plugin>

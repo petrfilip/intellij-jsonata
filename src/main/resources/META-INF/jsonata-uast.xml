@@ -1,0 +1,10 @@
+<idea-plugin>
+    <!-- Loaded only when com.intellij.modules.java is available (see optional depends in plugin.xml). -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Gutter icon to register JsonataFunctionProvider classes. TEMPORARILY DISABLED together with
+             the rest of the custom-functions feature (see CUSTOM_FUNCTIONS_ENABLED); uncomment to restore.
+        <codeInsight.lineMarkerProvider language="UAST"
+                                        implementationClass="cz.tix.jsonata.lang.JsonataProviderLineMarkerProvider"/>
+        -->
+    </extensions>
+</idea-plugin>

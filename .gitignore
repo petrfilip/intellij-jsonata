@@ -1,0 +1,15 @@
+# Build output
+/.gradle/
+/.intellijPlatform/
+/build/
+/.kotlin/
+
+# IntelliJ IDEA project files
+/.idea/
+*.iml
+
+# Plugin signing material — never commit private keys, certs or tokens
+*.pem
+*.crt
+*.p12
+secrets.properties
