@@ -1,4 +1,6 @@
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.models.ProductRelease
 
 plugins {
     id("java")
@@ -23,8 +25,6 @@ dependencies {
         pluginVerifier()
         zipSigner()
         testFramework(TestFrameworkType.Platform)
-        // Compile-time only: UAST + PSI for the (optional) gutter icon on provider classes.
-        bundledPlugin("com.intellij.java")
     }
 
     // JSONata engine — faithful Java port of jsonata.js (Apache-2.0). Bundled into the plugin.
@@ -74,7 +74,17 @@ intellijPlatform {
     // Verify cross-product compatibility (PyCharm, WebStorm, GoLand, …), not just IntelliJ IDEA.
     pluginVerification {
         ides {
+            // recommended() resolves to IntelliJ IDEA builds only, so it verifies across versions
+            // but not across products. Add representative non-Java IDEs at the 2024.3 baseline to
+            // prove the optional com.intellij.modules.java dependency never leaks into a non-Java IDE.
+            // (2.16.0 has no ide(type, version); products are selected via select { } filters.)
             recommended()
+            select {
+                types = listOf(IntelliJPlatformType.PyCharmCommunity, IntelliJPlatformType.WebStorm)
+                channels = listOf(ProductRelease.Channel.RELEASE)
+                sinceBuild = "243"
+                untilBuild = "243.*"
+            }
         }
     }
 }

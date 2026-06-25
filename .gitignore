@@ -13,3 +13,6 @@
 *.crt
 *.p12
 secrets.properties
+
+# macOS
+.DS_Store

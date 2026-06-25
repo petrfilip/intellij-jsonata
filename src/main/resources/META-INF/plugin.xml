@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>cz.tix.jsonata</id>
     <name>JSONata</name>
-    <vendor email="petr.filip@tix.cz" url="https://tix.cz">Petr Filip</vendor>
+    <vendor email="petr.filip@tix.cz" url="https://github.com/petrfilip">Petr Filip</vendor>
 
     <description><![CDATA[
         <p>Evaluate <b>JSONata</b> expressions against the JSON file you have open, with a live preview &mdash;
@@ -13,11 +13,10 @@
     ]]></description>
 
     <!-- Base platform only; JSON syntax highlighting of the result is resolved at runtime
-         from the bundled JSON file type, so no hard dependency on the JSON plugin is needed. -->
+         from the bundled JSON file type, so no hard dependency on the JSON plugin is needed.
+         No Java/UAST dependency: the plugin uses only base-platform API and runs unchanged in
+         every JetBrains IDE (IntelliJ IDEA, PyCharm, WebStorm, GoLand, …). -->
     <depends>com.intellij.modules.platform</depends>
-    <!-- Optional: the gutter icon on JsonataFunctionProvider classes needs Java/Kotlin PSI (UAST).
-         Loaded only when the Java module is present (e.g. IntelliJ IDEA); the rest works everywhere. -->
-    <depends optional="true" config-file="jsonata-uast.xml">com.intellij.modules.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- JSON files open in a split editor: JSON on the left, JSONata playground preview on the

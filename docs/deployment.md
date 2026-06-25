@@ -15,11 +15,13 @@ a jak ho dál aktualizovat. Součástí je ověření, že plugin běží např�
 4. Vygenerovat **podpisový certifikát** a **publish token**, doplnit `signing {}` / `publishing {}` do `build.gradle.kts`.
 5. **První verzi nahrát ručně** přes web (kvůli moderaci a vyplnění listingu), další verze přes `./gradlew publishPlugin`.
 
-> **Stav v tomto repu (verze 0.1.0):** připravené je vše, co jde bez tajných klíčů — `build.gradle.kts`
-> (signing/publishing/verifier/changeNotes), `LICENSE` (MIT), listing ikony
-> (`META-INF/pluginIcon.svg` + dark varianta), `CHANGELOG.md`, vendor `Petr Filip` a GitHub workflow pro build
-> i release. **Na tobě zbývá:** vygenerovat podpisový certifikát + publish token a nastavit je jako
-> GitHub secrets (krok 7–8), a první verzi nahrát ručně kvůli moderaci (krok 10).
+> **Stav v tomto repu (verze 0.1.0):** připravené a **ověřené** je vše, co jde bez tajných klíčů —
+> `build.gradle.kts` (signing/publishing/verifier/changeNotes), `LICENSE` (MIT), listing ikony
+> (`META-INF/pluginIcon.svg` + dark varianta), `CHANGELOG.md`, vendor `Petr Filip` a GitHub workflow pro
+> build i release. JDK toolchain je přenositelný (foojay-resolver 1.0.0, žádná natvrdo zadaná cesta),
+> plugin je čistě **platform-only** (žádná Java/UAST závislost) a `./gradlew verifyPlugin` je **zelený
+> napříč IDEA + PyCharm + WebStorm**. **Na tobě zbývá:** vygenerovat podpisový certifikát + publish token
+> a nastavit je jako GitHub secrets (krok 7–8), a první verzi nahrát ručně kvůli moderaci (krok 10).
 
 ---
 
@@ -30,17 +32,17 @@ Odpověď: ano.** Plugin je tak přímo navržený. Důkazy z kódu:
 
 | Co | Stav | Důsledek |
 |----|------|----------|
-| `<depends>com.intellij.modules.platform</depends>` | jediná **povinná** závislost | jádro platformy je v **každém** IntelliJ IDE |
-| `<depends optional="true" … >com.intellij.modules.java</depends>` | **volitelná**, přes `jsonata-uast.xml` | Java/Kotlin PSI se vyžaduje jen pro jeden nepovinný feature |
+| `<depends>com.intellij.modules.platform</depends>` | jediná závislost (a povinná) | jádro platformy je v **každém** IntelliJ IDE |
+| Java/UAST | **žádná** závislost (ani volitelná, ani pro kompilaci) | nic vázaného na `com.intellij.modules.java` |
 | Detekce JSON souboru (`isJsonFile`) | jen podle přípony `.json` / `.json5` | **žádná** závislost na JSON pluginu |
 | Vykreslení výsledku (`JsonRenderer`) | vlastní pretty-printer | žádná externí JSON knihovna |
 | JSONata engine `com.dashjoin:jsonata` | přibalený do pluginu | nezávisí na IDE |
 
-Jediná část vázaná na Javu je **gutter ikona** u tříd implementujících `JsonataFunctionProvider`
-(`JsonataProviderLineMarkerProvider` přes UAST). Ta je registrovaná výhradně v `jsonata-uast.xml`,
-který se načte **jen** když je přítomný modul `com.intellij.modules.java`. Ve všech ostatních IDE
-plugin běží beze změny, jen bez této ikony (custom funkce jdou stále registrovat v *Settings ▸ Tools ▸
-JSONata Playground*).
+Plugin **nemá žádnou část vázanou na Javu**. (Dřívější gutter ikona u tříd implementujících
+`JsonataFunctionProvider` — `JsonataProviderLineMarkerProvider` přes UAST — byla odstraněna, protože
+tahala Java/UAST API do hlavního jaru a Plugin Verifier ji hlásil jako chybějící API v non-Java IDE.
+Custom funkce se registrují v *Settings ▸ Tools ▸ JSONata Playground*; ikona by se případně mohla vrátit
+jako samostatný IDEA-only modul.)
 
 ### Produkty, kde plugin poběží
 
@@ -52,11 +54,10 @@ Vše postavené na IntelliJ Platformě build **243+** (2024.3+):
 - DataGrip (DataSpell), Android Studio (Koala+ na 2024.3 baseline)
 - Writerside, JetBrains Gateway (kde dává smysl)
 
-> **Poznámka k buildu vs. runtime:** projekt se kompiluje proti `intellijIdeaCommunity("2024.3.7")`
-> a používá `bundledPlugin("com.intellij.java")` **jen pro kompilaci** UAST featury. To kompatibilitu
-> nesnižuje — runtime závislost na Javě zůstává volitelná. Je to přesně doporučený pattern
-> „compile against IDEA, depend optionally“. Marketplace odvodí kompatibilní produkty z `plugin.xml`
-> (povinný je jen platform modul) → plugin se nabídne ve všech IDE.
+> **Poznámka k buildu vs. runtime:** projekt se kompiluje proti `intellijIdeaCommunity("2024.3.7")`,
+> ale používá **jen** base-platform API — žádný `bundledPlugin("com.intellij.java")`. Marketplace
+> odvodí kompatibilní produkty z `plugin.xml` (jediná závislost je platform modul) → plugin se nabídne
+> ve všech IDE. Ověřeno Plugin Verifierem: „Compatible“ napříč IDEA, PyCharm i WebStorm (krok 6).
 
 **Doporučení:** kompatibilitu nenech jen na papíře — ověř ji Plugin Verifierem (krok 6).
 
@@ -68,11 +69,12 @@ Vše postavené na IntelliJ Platformě build **243+** (2024.3+):
   (JetBrains Hub). U prvního pluginu tě vyzve k odsouhlasení [Marketplace Agreement](https://plugins.jetbrains.com/legal/terms).
 - **Vendor** je v `plugin.xml` nastavený: `Petr Filip`, `petr.filip@tix.cz`, `https://tix.cz`.
   Zvaž zřízení **organizačního (vendor) účtu** na Marketplace, ať plugin nevisí pod osobním profilem.
-- **JDK 21** pro build (platforma 2024.3 běží na Javě 21).
-  Pozor: `gradle.properties` má natvrdo cestu k lokálnímu JBR z Android Studia
-  (`org.gradle.java.installations.paths`). Před buildem na CI / jiném stroji buď:
-  - nainstaluj JDK 21 a uprav/odstraň tento řádek, **nebo**
-  - přidej `foojay-resolver` do `settings.gradle.kts`, ať Gradle JDK doprovizuje sám.
+- **JDK 21** pro build (platforma 2024.3 běží na Javě 21). Toolchain je vyřešený přenositelně:
+  `settings.gradle.kts` má `foojay-resolver-convention` **1.0.0** (jediná verze kompatibilní s Gradle
+  9.0 — starší 0.10.0 padá na `NoSuchFieldError: IBM_SEMERU`), který JDK 21 doprovizuje, a CI ho dodá
+  přes `setup-java`. V `gradle.properties` **není** žádná natvrdo zadaná cesta. Chceš-li lokálně využít
+  existující JDK/JBR 21 (a vyhnout se stažení), přidej jeho cestu do `~/.gradle/gradle.properties`
+  (`org.gradle.java.installations.paths`) — Gradle JBR uvnitř `.app` balíčků sám nenajde.
 
 ---
 
@@ -142,15 +144,17 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            // Kurátorovaný seznam doporučených IDE napříč produkty na úrovni sinceBuild.
-            // Ideální pro potvrzení cross-product kompatibility jedním příkazem.
+            // POZOR: recommended() se rozpadne jen na buildy IntelliJ IDEA (IC/IU) napříč verzemi —
+            // ověří kompatibilitu napříč VERZEMI, ale ne napříč PRODUKTY. Pro non-Java IDE je třeba
+            // přidat je explicitně. Plugin 2.16.0 NEMÁ funkci `ide(type, version)` — produkty se
+            // vybírají přes `select { }` s filtrem (FilterParameters: types/channels/sinceBuild/untilBuild).
             recommended()
-
-            // Případně explicitně konkrétní produkty/verze:
-            // ide(IntelliJPlatformType.PyCharmCommunity, "2024.3")
-            // ide(IntelliJPlatformType.WebStorm,         "2024.3")
-            // ide(IntelliJPlatformType.GoLand,           "2024.3")
-            // ide(IntelliJPlatformType.PhpStorm,         "2024.3")
+            select {
+                types = listOf(IntelliJPlatformType.PyCharmCommunity, IntelliJPlatformType.WebStorm)
+                channels = listOf(ProductRelease.Channel.RELEASE)
+                sinceBuild = "243"
+                untilBuild = "243.*"   // omezí na baseline 2024.3 → po jednom buildu na produkt
+            }
         }
     }
 }
@@ -164,10 +168,12 @@ Spuštění:
 
 Verifier stáhne uvedené IDE a zkontroluje, že plugin proti nim nepoužívá žádné chybějící/odebrané API.
 Reporty: `build/reports/pluginVerifier/`. Cílem je **žádné chybějící API** v non-Java IDE — to potvrdí,
-že Java závislost je opravdu jen volitelná.
+že plugin je opravdu platform-only. (Aktuální stav: „Compatible“ napříč IDEA, PyCharm i WebStorm.)
 
-> Pokud verifier hlásí použití Java API mimo `jsonata-uast.xml`, je to bug v izolaci optional featury —
-> oprav dřív, než publikuješ.
+> Pokud verifier začne hlásit `COMPATIBILITY_PROBLEMS` (chybějící třídy) v non-Java IDE, znamená to, že
+> se do kódu vloudila Java/UAST závislost (typicky `com.intellij.psi.PsiClass`, `org.jetbrains.uast.*`) —
+> izoluj ji do samostatného Java-only modulu, nebo odstraň, dřív než publikuješ. Default `failureLevel`
+> obsahuje `COMPATIBILITY_PROBLEMS` i `INTERNAL_API_USAGES`, takže takový problém build shodí.
 
 ---
 
@@ -286,13 +292,22 @@ intellijPlatform {
     }
 
     pluginVerification {
-        ides { recommended() }
+        ides {
+            recommended()
+            select {
+                types = listOf(IntelliJPlatformType.PyCharmCommunity, IntelliJPlatformType.WebStorm)
+                channels = listOf(ProductRelease.Channel.RELEASE)
+                sinceBuild = "243"
+                untilBuild = "243.*"
+            }
+        }
     }
 }
 ```
 
-`IntelliJPlatformType` (pokud bys chtěl explicitní IDE v `pluginVerification`) se importuje jako
-`org.jetbrains.intellij.platform.gradle.IntelliJPlatformType`.
+Importy pro `pluginVerification` (nahoře v `build.gradle.kts`):
+`org.jetbrains.intellij.platform.gradle.IntelliJPlatformType` a
+`org.jetbrains.intellij.platform.gradle.models.ProductRelease`.
 
 ---
 
@@ -388,8 +403,8 @@ jobs:
         run: ./gradlew publishPlugin
 ```
 
-> Na CI nezapomeň vyřešit JDK 21 (viz krok 3) — `setup-java` výše to řeší, ale natvrdo zadaná cesta
-> v `gradle.properties` ji může přebít. Před CI ten řádek odstraň nebo přepiš.
+> JDK 21 na CI řeší `setup-java` výše; `gradle.properties` už žádnou natvrdo zadanou cestu neobsahuje,
+> takže není co přebíjet. Na strojích bez JDK 21 ho doprovizuje `foojay-resolver` (viz krok 3).
 
 ---
 
@@ -405,7 +420,7 @@ Hotovo v repu (✅) / zbývá na tobě (☐):
 - [x] listing ikona `META-INF/pluginIcon.svg` (40×40) + dark varianta
 - [x] `./gradlew verifyPluginProjectConfiguration` bez chyb *(ověřeno)*
 - [x] `./gradlew test` zelené *(ověřeno)*
-- [ ] `./gradlew verifyPlugin` (recommended IDEs) — **žádné chybějící API** v non-Java IDE *(běží i v CI)*
+- [x] `./gradlew verifyPlugin` — **Compatible** napříč IDEA + PyCharm + WebStorm, žádné chybějící/interní API *(ověřeno; běží i v CI)*
 - [ ] `./gradlew signPlugin && ./gradlew verifyPluginSignature` OK *(potřebuje certifikát)*
 - [ ] secrets nastavené (`CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`, `PUBLISH_TOKEN`) — lokálně i jako GitHub secrets
 - [ ] první verze nahraná ručně přes web → prošla moderací

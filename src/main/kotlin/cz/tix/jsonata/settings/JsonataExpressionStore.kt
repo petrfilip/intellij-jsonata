@@ -31,14 +31,14 @@ class JsonataExpressionStore : SimplePersistentStateComponent<JsonataExpressionS
     /** Remembers [expression] for [fileUrl]; an empty/blank expression removes the entry. */
     fun put(fileUrl: String, expression: String) {
         val current = state.expressions[fileUrl]
+        // The `expressions` map is a BaseState `map()` property, so structural mutations below
+        // bump the state's modification count automatically — no manual increment needed.
         if (expression.isEmpty()) {
             if (current != null) {
                 state.expressions.remove(fileUrl)
-                state.intIncrementModificationCount()
             }
         } else if (current != expression) {
             state.expressions[fileUrl] = expression
-            state.intIncrementModificationCount()
         }
     }
 

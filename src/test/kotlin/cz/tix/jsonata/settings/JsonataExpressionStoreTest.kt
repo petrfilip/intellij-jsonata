@@ -2,6 +2,7 @@ package cz.tix.jsonata.settings
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class JsonataExpressionStoreTest {
@@ -43,5 +44,24 @@ class JsonataExpressionStoreTest {
         store.put(fileA, "")
 
         assertNull(store.get(fileA))
+    }
+
+    @Test
+    fun `mutating the store bumps the persistent state modification count`() {
+        // Guards the removal of the (internal-API) manual intIncrementModificationCount() calls:
+        // mutating a BaseState map() property must dirty the state on its own, or the IDE would
+        // silently fail to persist remembered expressions across restarts.
+        val store = JsonataExpressionStore()
+        val initial = store.state.modificationCount
+
+        store.put(fileA, "x.y")
+        val afterPut = store.state.modificationCount
+        assertTrue(afterPut > initial, "storing an expression must bump the modification count")
+
+        store.put(fileA, "x.y") // no-op: same value, must not dirty the state
+        assertEquals(afterPut, store.state.modificationCount)
+
+        store.put(fileA, "") // removal must dirty the state again
+        assertTrue(store.state.modificationCount > afterPut, "clearing an expression must bump the modification count")
     }
 }

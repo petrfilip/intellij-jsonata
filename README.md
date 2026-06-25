@@ -1,8 +1,9 @@
-# JSONata — IntelliJ plugin
+# JSONata for JetBrains IDEs
 
-An IntelliJ IDEA plugin for working with [JSONata](https://jsonata.org/). Open a panel over an open
-JSON file, write a JSONata expression and see the result right away — much like
-[try.jsonata.org](https://try.jsonata.org/), but inside the IDE and wired directly to your JSON file.
+A plugin for working with [JSONata](https://jsonata.org/) in any JetBrains IDE built on the IntelliJ
+Platform 2024.3+ (IntelliJ IDEA, PyCharm, WebStorm, GoLand, PhpStorm, RubyMine, CLion, Rider and more).
+Open a panel over an open JSON file, write a JSONata expression and see the result right away — much
+like [try.jsonata.org](https://try.jsonata.org/), but inside the IDE and wired directly to your JSON file.
 
 ## What it does
 
@@ -18,6 +19,8 @@ JSON file, write a JSONata expression and see the result right away — much lik
   - **the JSON structure** — field names for the current path under the cursor (the path is
     *evaluated* against the bound JSON, so it works even through predicates and function calls).
 - **Parameter info** — the signature of a built-in function with the current argument highlighted.
+- **Remembered per file** — the expression you last used for a JSON file is restored when you reopen it,
+  including across IDE restarts.
 
 Engine: [`com.dashjoin:jsonata`](https://github.com/dashjoin/jsonata-java) (a faithful port of jsonata.js).
 
@@ -36,8 +39,7 @@ Engine: [`com.dashjoin:jsonata`](https://github.com/dashjoin/jsonata-java) (a fa
 
 > ⚠️ **Temporarily disabled in the UI** (0.1.0) — the feature is complete in the code but hidden from
 > the frontend until we fine-tune it. To enable: flip `CUSTOM_FUNCTIONS_ENABLED` to `true` (in
-> `JsonataFeatureFlags.kt`) and uncomment the registrations in `plugin.xml` (`projectConfigurable`) and
-> `jsonata-uast.xml` (`lineMarkerProvider`).
+> `JsonataFeatureFlags.kt`) and uncomment the `projectConfigurable` registration in `plugin.xml`.
 
 Two ways to add functions you call in an expression as `$myFunction(...)` — configuration lives in
 **Settings ▸ Tools ▸ JSONata Playground** (per project):
@@ -48,9 +50,7 @@ Two ways to add functions you call in an expression as `$myFunction(...)` — co
    from the module output (with its own classloader) and binds the functions. A ready-made example to try
    in another repo: [`examples/custom-functions/`](examples/custom-functions/).
 
-A class can also be registered via a **gutter icon** next to its declaration (Java/Kotlin through UAST):
-a class implementing `JsonataFunctionProvider` shows an icon — **green** when registered, a “+” when
-not; clicking toggles the registration (and turns the opt-in on). Settings remains the source of truth.
+Registration lives in Settings, which is the source of truth.
 
 The available functions appear in the “Custom functions” line in the panel and autocomplete
 (`Ctrl+Space` after `$`).
@@ -63,15 +63,15 @@ The available functions appear in the “Custom functions” line in the panel a
 ```bash
 ./gradlew runIde          # launches a sandbox IDE with the plugin installed
 ./gradlew buildPlugin     # ZIP into build/distributions/
-./gradlew test            # runs the tests (240: pure + headless platform)
+./gradlew test            # unit + headless-platform tests
 ./gradlew verifyPluginProjectConfiguration
 ```
 
 ### Build requirements
 - IntelliJ Platform Gradle Plugin **2.16**, target IDE **IntelliJ IDEA Community 2024.3** (`sinceBuild 243`).
-- The build runs on a **JDK 21 toolchain** (platform 2024.3 requires Java 21). The path to a local JDK 21
-  is in `gradle.properties` (`org.gradle.java.installations.paths`); on CI / another machine install
-  JDK 21 or add `foojay-resolver` to `settings.gradle.kts`.
+- The build runs on a **JDK 21 toolchain** (platform 2024.3 requires Java 21). No machine-specific JDK
+  path is committed: the `foojay-resolver` plugin in `settings.gradle.kts` auto-provisions JDK 21 (and
+  CI provides one via `setup-java`). To reuse a local JDK/JBR 21, add its path to `~/.gradle/gradle.properties`.
 - The Gradle wrapper is pinned to 9.0.0.
 
 ## Architecture (in brief)
@@ -91,15 +91,10 @@ cz.tix.jsonata
 └─ actions/       OpenJsonataPlaygroundAction, JsonataFloatingToolbarProvider
 ```
 
-Detailed analyses and decisions: [`ANALYZA.md`](ANALYZA.md) (overall design) and
-[`AUTOCOMPLETE.md`](AUTOCOMPLETE.md) (autocomplete + why not LSP).
-
 ## Known limitations / future work
 
-- The entered expression is not remembered across sessions (it lives in the editor tab of that file).
 - All JSON files open in a split editor (the preview is hidden by default, though).
 - A full structural PSI parser (rename, find-usages for `$variables`) — not done; not needed for the
   current features.
 - Field completion inside a lambda (`$map(a, function($v){ $v. })`) — has no scope for `$v`, falls back.
 - Regex literals `/.../` are not lexed separately (the engine evaluates them correctly).
-- Running the IntelliJ Plugin Verifier against several IDE versions in CI is worth enabling.
