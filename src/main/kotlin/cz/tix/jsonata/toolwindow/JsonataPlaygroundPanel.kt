@@ -113,7 +113,11 @@ class JsonataPlaygroundPanel(
         val listener = object : DocumentListener {
             override fun documentChanged(event: DocumentEvent) = scheduleEvaluation()
         }
-        document.addDocumentListener(listener, this)
+        // Registered WITHOUT a parent disposable on purpose: the source document can be rebound (the
+        // removal just above) and is removed manually here and in dispose(). Passing `this` as the
+        // parent would make the platform auto-remove it on dispose too, double-removing the listener
+        // and logging "Can't remove document listener".
+        document.addDocumentListener(listener)
         sourceListener = listener
         sourceFileUrl = file?.url
         sourceLabel.text = "Source JSON: ${file?.name ?: "(in-memory document)"}"

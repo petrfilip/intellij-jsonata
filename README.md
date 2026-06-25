@@ -5,6 +5,8 @@ Platform 2024.3+ (IntelliJ IDEA, PyCharm, WebStorm, GoLand, PhpStorm, RubyMine, 
 Open a panel over an open JSON file, write a JSONata expression and see the result right away — much
 like [try.jsonata.org](https://try.jsonata.org/), but inside the IDE and wired directly to your JSON file.
 
+![The JSONata playground in a JetBrains IDE — a JSON file on the left, a JSONata expression and its live result on the right](docs/screenshot.png)
+
 ## What it does
 
 - **Live preview (per file).** JSON files open in a **split editor** (like Markdown):
