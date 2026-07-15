@@ -11,11 +11,10 @@ import com.intellij.openapi.project.Project
 
 /**
  * Remembers the JSONata expression last used for each JSON file, keyed by the file's URL, so the
- * playground restores it when the file is reopened — and across IDE restarts.
+ * playground restores it when the file is reopened and across IDE restarts.
  *
- * Stored in the project's `workspace.xml` (personal working state, not shared in VCS), matching how
- * the IDE persists other per-file editor state. An empty expression drops the entry rather than
- * storing a blank, so files the user never queried leave no trace.
+ * Stored in the project's `workspace.xml` as personal working state. Blank expressions are removed
+ * instead of persisted, so files with no meaningful query leave no state behind.
  */
 @Service(Service.Level.PROJECT)
 @State(name = "JsonataExpressions", storages = [Storage(StoragePathMacros.WORKSPACE_FILE)])
@@ -25,18 +24,12 @@ class JsonataExpressionStore : SimplePersistentStateComponent<JsonataExpressionS
         var expressions by map<String, String>()
     }
 
-    /** The last expression remembered for [fileUrl], or null if none. */
     fun get(fileUrl: String): String? = state.expressions[fileUrl]
 
-    /** Remembers [expression] for [fileUrl]; an empty/blank expression removes the entry. */
     fun put(fileUrl: String, expression: String) {
         val current = state.expressions[fileUrl]
-        // The `expressions` map is a BaseState `map()` property, so structural mutations below
-        // bump the state's modification count automatically — no manual increment needed.
-        if (expression.isEmpty()) {
-            if (current != null) {
-                state.expressions.remove(fileUrl)
-            }
+        if (expression.isBlank()) {
+            if (current != null) state.expressions.remove(fileUrl)
         } else if (current != expression) {
             state.expressions[fileUrl] = expression
         }
