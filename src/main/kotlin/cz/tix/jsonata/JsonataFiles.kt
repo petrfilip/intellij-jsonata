@@ -2,8 +2,11 @@ package cz.tix.jsonata
 
 import com.intellij.openapi.vfs.VirtualFile
 
-/** True for files we treat as JSON (the playground attaches to these). */
-internal fun isJsonFile(file: VirtualFile): Boolean {
-    val ext = file.extension?.lowercase()
-    return ext == "json" || ext == "json5"
-}
+/**
+ * True for strict JSON files supported by the bundled JSONata engine.
+ *
+ * JSON5 is intentionally excluded: accepting it here would replace the IDE editor and then fail at
+ * evaluation time because the engine input parser only accepts standard JSON.
+ */
+internal fun isJsonFile(file: VirtualFile): Boolean =
+    file.extension.equals("json", ignoreCase = true)
