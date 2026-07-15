@@ -1,17 +1,17 @@
 package cz.tix.jsonata.settings
 
-import com.intellij.openapi.Disposable
 import com.intellij.ide.trustedProjects.TrustedProjectsListener
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.OrderEnumerator
-import cz.tix.jsonata.completion.JsonataBuiltins
 import cz.tix.jsonata.api.JsonataFn
 import cz.tix.jsonata.api.JsonataFunctionProvider
 import cz.tix.jsonata.api.JsonataFunctions
+import cz.tix.jsonata.completion.JsonataBuiltins
 import cz.tix.jsonata.engine.CustomFunction
 import java.io.File
 import java.net.URL
@@ -28,11 +28,6 @@ import java.net.URLClassLoader
 @Service(Service.Level.PROJECT)
 class JsonataFunctionLoader(private val project: Project) : Disposable {
 
-    /**
-     * @param functions successfully loaded custom functions.
-     * @param errors per-class load/validation failures, surfaced in the playground panel.
-     * @param active whether the feature is opted in (true even when zero functions were loaded).
-     */
     data class LoadResult(val functions: List<CustomFunction>, val errors: List<String>, val active: Boolean)
 
     @Volatile
@@ -49,10 +44,8 @@ class JsonataFunctionLoader(private val project: Project) : Disposable {
         })
     }
 
-    /** Loads (lazily, then cached) the custom functions for this project. */
     fun load(): LoadResult = cache ?: doLoad()
 
-    /** Drops the cache and closes the backing [URLClassLoader] so the next [load] re-reads from disk. */
     @Synchronized
     fun invalidate() {
         cache = null
@@ -70,12 +63,11 @@ class JsonataFunctionLoader(private val project: Project) : Disposable {
 
     private fun compute(): LoadResult {
         val settings = JsonataProjectSettings.getInstance(project).state
-        // Explicit per-project opt-in is the safety gate: loaded code runs unsandboxed in the IDE JVM.
         if (!settings.customFunctionsEnabled) return LoadResult(emptyList(), emptyList(), active = false)
         if (!isProjectTrusted()) {
             return LoadResult(
                 emptyList(),
-                listOf("Custom functions are disabled until the project is trusted"),
+                listOf("Custom functions are disabled because project trust could not be confirmed"),
                 active = false,
             )
         }
@@ -125,11 +117,15 @@ class JsonataFunctionLoader(private val project: Project) : Disposable {
         return paths.mapNotNull { runCatching { File(it).toURI().toURL() }.getOrNull() }.toTypedArray()
     }
 
+    /**
+     * Trust is a security boundary. Any API mismatch, reflection failure or unexpected return value
+     * must therefore fail closed and keep unsandboxed project code disabled.
+     */
     private fun isProjectTrusted(): Boolean =
         runCatching {
             val trustedProjects = Class.forName("com.intellij.ide.impl.TrustedProjects")
-            trustedProjects.getMethod("isTrusted", Project::class.java).invoke(null, project) as Boolean
-        }.getOrDefault(true)
+            trustedProjects.getMethod("isTrusted", Project::class.java).invoke(null, project) as? Boolean ?: false
+        }.getOrDefault(false)
 
     override fun dispose() = invalidate()
 
@@ -138,21 +134,17 @@ class JsonataFunctionLoader(private val project: Project) : Disposable {
     }
 }
 
-/** Validation/normalization helpers for provider class names and custom function names. */
 internal object JsonataFunctionNames {
     private val FUNCTION_NAME = Regex("[A-Za-z_][A-Za-z0-9_]*")
 
-    /** Trims and de-duplicates the provider FQNs, preserving first-occurrence order. */
     fun normalizeProviderClassNames(raw: Iterable<String>): List<String> =
         raw.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
 
-    /** Strips ONE leading `$` and returns the name only if it matches `[A-Za-z_][A-Za-z0-9_]*`, else null. */
     fun normalizeFunctionName(raw: String): String? {
         val name = raw.trim().removePrefix("$")
         return name.takeIf { FUNCTION_NAME.matches(it) }
     }
 
-    /** Whether [normalizedName] (no `$`) collides with a JSONata built-in. */
     fun isBuiltInFunctionName(normalizedName: String): Boolean =
         JsonataBuiltins.byName("\$$normalizedName") != null
 }
